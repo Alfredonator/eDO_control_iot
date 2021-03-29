@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import time
 
 import rospy
 from std_msgs.msg import Bool
@@ -17,6 +18,8 @@ from edo_core_msgs.srv import ControlSwitch, ControlSwitchRequest
 from messages import errors
 
 from getkey import getkey, keys
+
+from util import Button
 
 
 class EdoStates(object):
@@ -49,7 +52,7 @@ class EdoStates(object):
     OP_EMERGENCY_STOP = 128     # E-stop active [as documented in code; surprisingly actual E-STOP is not 128 but OP_BRAKE_ACTIVE]
     OP_FENCE = 256              # Fence active
 
-    def __init__(self, current_state=-1, opcode=-1, enable_algorithm_node=False):
+    def __init__(self, current_state=-1, opcode=-1, enable_algorithm_node=False, current_command=Button.NONE):
         self.edo_current_state = current_state
         self._edo_opcode_previous = opcode
         self._edo_current_state_previous = current_state
@@ -97,6 +100,7 @@ class EdoStates(object):
         self.disable_collision()
 
         self.switch_algo_service(enable_algorithm_node)
+        self.current_command = current_command
 
     def disable_collision(self):
         # before disabling edo_algorithms we need to "disable" collision checking on joints and raspberry
@@ -332,26 +336,28 @@ class EdoStates(object):
         rospy.loginfo("Calibrating joint %d", self.current_joint + 1)
 
         while not rospy.is_shutdown():
-            key = getkey()
-            if key == keys.UP:
+            # key = getkey()
+            print(self.current_command.state)
+            # time.sleep(2)
+            if self.current_command.state == Button.UP:
                 if self._edo_jog_speed < self.JOG_SPEED_MAX:
                     self._edo_jog_speed += 0.1
                     rospy.loginfo("Jog speed: %.1f", self._edo_jog_speed)
-            elif key == keys.DOWN:
+            elif self.current_command.state == Button.DOWN:
                 if self._edo_jog_speed > self.JOG_SPEED_MIN:
                     self._edo_jog_speed -= 0.1
                     rospy.loginfo("Jog speed: %.1f", self._edo_jog_speed)
-            elif key == keys.RIGHT:
+            elif self.current_command.state == Button.RIGHT:
                 self.jog_command_pub.publish(self.create_jog_joint_command_message(1))
-            elif key == keys.LEFT:
+            elif self.current_command.state == Button.LEFT:
                 self.jog_command_pub.publish(self.create_jog_joint_command_message(-1))
-            elif key == keys.PLUS:
+            elif self.current_command.state == Button.PLUS:
                 self.current_joint = (self.current_joint + 1) % self.NUMBER_OF_JOINTS
                 rospy.loginfo("Calibrating joint %d", self.current_joint + 1)
-            elif key == keys.MINUS:
+            elif self.current_command.state == Button.MINUS:
                 self.current_joint = (self.current_joint - 1) % self.NUMBER_OF_JOINTS
                 rospy.loginfo("Calibrating joint %d", self.current_joint + 1)
-            elif key == keys.ENTER:
+            elif self.current_command.state == Button.ENTER:
                 if self.current_joint < 0 or self.current_joint > self.NUMBER_OF_JOINTS-1:
                     rospy.logerr("Wrong number of joint %d", self.current_joint)
                     break
@@ -368,11 +374,58 @@ class EdoStates(object):
                     return self.edo_current_state == self.CS_CALIBRATED and self.edo_opcode == 0
                 else:
                     rospy.loginfo("Calibrating joint %d...", self.current_joint + 1)
-            elif key == keys.ESC:
+
+                self.current_command.state = Button.NONE
+                print("trying to change the status " + str(self.current_command.state))
+
+            elif self.current_command.state == Button.ESC:
                 rospy.loginfo("Calibration NOT finished for all joints, exiting jog loop")
                 break
+            elif self.current_command.state == Button.NONE:
+                continue
             else:
                 rospy.logwarn("Wrong button was pressed")
+
+            # if key == keys.UP:
+            #     if self._edo_jog_speed < self.JOG_SPEED_MAX:
+            #         self._edo_jog_speed += 0.1
+            #         rospy.loginfo("Jog speed: %.1f", self._edo_jog_speed)
+            # elif key == keys.DOWN:
+            #     if self._edo_jog_speed > self.JOG_SPEED_MIN:
+            #         self._edo_jog_speed -= 0.1
+            #         rospy.loginfo("Jog speed: %.1f", self._edo_jog_speed)
+            # elif key == keys.RIGHT:
+            #     self.jog_command_pub.publish(self.create_jog_joint_command_message(1))
+            # elif key == keys.LEFT:
+            #     self.jog_command_pub.publish(self.create_jog_joint_command_message(-1))
+            # elif key == keys.PLUS:
+            #     self.current_joint = (self.current_joint + 1) % self.NUMBER_OF_JOINTS
+            #     rospy.loginfo("Calibrating joint %d", self.current_joint + 1)
+            # elif key == keys.MINUS:
+            #     self.current_joint = (self.current_joint - 1) % self.NUMBER_OF_JOINTS
+            #     rospy.loginfo("Calibrating joint %d", self.current_joint + 1)
+            # elif key == keys.ENTER:
+            #     if self.current_joint < 0 or self.current_joint > self.NUMBER_OF_JOINTS-1:
+            #         rospy.logerr("Wrong number of joint %d", self.current_joint)
+            #         break
+            #     msg_jc = JointCalibration()
+            #     msg_jc.joints_mask = 1 << self.current_joint
+            #     self._joint_calibration_command_pub.publish(msg_jc)
+            #
+            #     # increase joint number or/and quit the calibration procedure
+            #     self.current_joint += 1
+            #
+            #     if self.current_joint >= self.NUMBER_OF_JOINTS-1:
+            #         self.current_joint = 0
+            #         rospy.sleep(1)
+            #         return self.edo_current_state == self.CS_CALIBRATED and self.edo_opcode == 0
+            #     else:
+            #         rospy.loginfo("Calibrating joint %d...", self.current_joint + 1)
+            # elif key == keys.ESC:
+            #     rospy.loginfo("Calibration NOT finished for all joints, exiting jog loop")
+            #     break
+            # else:
+            #     rospy.logwarn("Wrong button was pressed")
 
     def jog(self):
 

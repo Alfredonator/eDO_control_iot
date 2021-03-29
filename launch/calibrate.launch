@@ -1,4 +1,4 @@
 <?xml version="1.0"?>
 <launch>
-  <node name="calibrate" pkg="calib" type="main.py" respawn="false" output="screen" />
+  <node name="calibrate" pkg="calib" type="pygt.py" respawn="false" output="screen" />
 </launch>

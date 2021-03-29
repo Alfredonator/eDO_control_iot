@@ -11,6 +11,8 @@ find_package(catkin REQUIRED COMPONENTS
   edo_core_msgs
   rospy
   std_msgs
+  rqt_gui
+  rqt_gui_py
 )
 
 ## System dependencies are found with CMake's conventions

@@ -7,19 +7,8 @@ from pynput.keyboard import Key, Controller
 import time
 from states import EdoStates
 
-#
-# def test():
-#     while True:
-#         key = getkey()
-#         if key == keys.ENTER:
-#             print("ENTER")
-#         else:
-#             print("Other key")
-#
-
 
 def calibrate_thread(states):
-    # test()
 
     calibrated = False
     rospy.logwarn("Starting robot calibration procedure...")

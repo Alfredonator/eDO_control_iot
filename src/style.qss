@@ -1,0 +1,35 @@
+QPushButton {
+    background-color: white;
+    border-radius: 15px;
+    border: 1px solid transparent;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    margin-left: 10px;
+    margin-right: 10px;
+    font-size: 18px;
+}
+
+QPushButton:pressed{
+    background-color:lightGray;
+}
+
+QSvgWidget {
+     height: 20px;
+     width: 20px;
+}
+
+QLabel {
+    background-color: #90EE90;
+    color: black;
+    margin-top: 40px;
+    margin-bottom: 40px;
+
+    border-radius: 15px;
+    border: 1px solid transparent;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    padding-left: 10px;
+    padding-right: 10px;
+    font-size: 15px;
+
+}
