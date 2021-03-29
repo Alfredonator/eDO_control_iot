@@ -31,26 +31,26 @@ class EdoStates(object):
     # Robot states in /machine_state
     CS_DISCONNECTED = -2
     CS_UNKNOWN = -1
-    CS_INIT = 0             # Initial state
-    CS_NOT_CALIBRATED = 1   # uncalibrated machine
-    CS_CALIBRATED = 2       # calibrated machine
-    CS_MOVE = 3             # machine in execution of a move
-    CS_JOG = 4              # machine running a jog
-    CS_MACHINE_ERROR = 5    # machine in error status and waiting for a restart
-    CS_BRAKED = 6           # brake active, no motor power supply
+    CS_INIT = 0  # Initial state
+    CS_NOT_CALIBRATED = 1  # uncalibrated machine
+    CS_CALIBRATED = 2  # calibrated machine
+    CS_MOVE = 3  # machine in execution of a move
+    CS_JOG = 4  # machine running a jog
+    CS_MACHINE_ERROR = 5  # machine in error status and waiting for a restart
+    CS_BRAKED = 6  # brake active, no motor power supply
     CS_INIT_DISCOVER = 254  # UI internal state if we are initializing joints
-    CS_COMMAND = 255        # state machine busy keep previous state, temporary status when there is a command running
+    CS_COMMAND = 255  # state machine busy keep previous state, temporary status when there is a command running
 
     # opcodes (bitwise) in /machine_state
-    OP_NACK = 1                 # At least 1 joint didn't send an ACK
-    OP_JOINT_ABSENT = 2         # A joint is not publishing its status. Hard stop
-    OP_JOINT_OVERCURRENT = 4    # Joint in over current. Hard stop
-    OP_JOINT_UNCALIBRATED = 8   # Joints not calibrated. Only jogs are accepted
-    OP_POSITION_ERROR = 16      # Position error. Hard stop
-    OP_ROSSERIAL_ERROR = 32     # Rosserial error. No state from joints. Hard stop
-    OP_BRAKE_ACTIVE = 64        # Brake active. No power supply provided to motors
-    OP_EMERGENCY_STOP = 128     # E-stop active [as documented in code; surprisingly actual E-STOP is not 128 but OP_BRAKE_ACTIVE]
-    OP_FENCE = 256              # Fence active
+    OP_NACK = 1  # At least 1 joint didn't send an ACK
+    OP_JOINT_ABSENT = 2  # A joint is not publishing its status. Hard stop
+    OP_JOINT_OVERCURRENT = 4  # Joint in over current. Hard stop
+    OP_JOINT_UNCALIBRATED = 8  # Joints not calibrated. Only jogs are accepted
+    OP_POSITION_ERROR = 16  # Position error. Hard stop
+    OP_ROSSERIAL_ERROR = 32  # Rosserial error. No state from joints. Hard stop
+    OP_BRAKE_ACTIVE = 64  # Brake active. No power supply provided to motors
+    OP_EMERGENCY_STOP = 128  # E-stop active [as documented in code; surprisingly actual E-STOP is not 128 but OP_BRAKE_ACTIVE]
+    OP_FENCE = 256  # Fence active
 
     def __init__(self, current_state=-1, opcode=-1, enable_algorithm_node=False, current_command=Button.NONE):
         self.edo_current_state = current_state
@@ -87,11 +87,12 @@ class EdoStates(object):
         self._joint_init_command_pub = rospy.Publisher('/bridge_init', JointInit, queue_size=10, latch=True)
         self._joint_reset_command_pub = rospy.Publisher('/bridge_jnt_reset', JointReset, queue_size=10, latch=True)
 
-        self.jog_command_pub =  rospy.Publisher('/bridge_jog', MovementCommand, queue_size=10, latch=True)
+        self.jog_command_pub = rospy.Publisher('/bridge_jog', MovementCommand, queue_size=10, latch=True)
         self.joint_control_pub = rospy.Publisher('/algo_jnt_ctrl', JointControlArray, queue_size=1)
         self.movement_command_pub = rospy.Publisher('/bridge_move', MovementCommand, queue_size=10, latch=True)
 
-        self._joint_calibration_command_pub = rospy.Publisher('/bridge_jnt_calib', JointCalibration, queue_size=10, latch=True)
+        self._joint_calibration_command_pub = rospy.Publisher('/bridge_jnt_calib', JointCalibration, queue_size=10,
+                                                              latch=True)
 
         rospy.Subscriber('/machine_movement_ack', MovementFeedback, self.move_ack_callback)
 
@@ -141,7 +142,8 @@ class EdoStates(object):
         # add one zero at the end cause the message JointControl changed in version 3.0 of edo
         self.msg_jca.joints = [JointControl(self.current_joint_states.joints[i].position,
                                             self.current_joint_states.joints[i].velocity,
-                                            self.current_joint_states.joints[i].current, 0, 0, 0) for i in range(6)] + [JointControl(self.gripper_position, 0, 0, 0, 0, 0)]
+                                            self.current_joint_states.joints[i].current, 0, 0, 0) for i in range(6)] + [
+                                  JointControl(self.gripper_position, 0, 0, 0, 0, 0)]
         self.joint_control_pub.publish(self.msg_jca)
 
     def switch_algo_service(self, new_state):
@@ -158,8 +160,9 @@ class EdoStates(object):
             if done:
                 rospy.logwarn("Robot's algorithm manager has been {}d".format(state_string))
             else:
-                rospy.logwarn("Cannot {} internal robot's algorithm manager, perhaps it is already {}d".format(state_string, state_string))
-
+                rospy.logwarn(
+                    "Cannot {} internal robot's algorithm manager, perhaps it is already {}d".format(state_string,
+                                                                                                     state_string))
 
     def callback(self, msg):
         self.edo_current_state = msg.current_state
@@ -289,9 +292,9 @@ class EdoStates(object):
         self.msg_mc.ovr = 50
         self.msg_mc.target.data_type = 74
         self.msg_mc.target.joints_mask = (1 << len(joint_names)) - 1
-        self.msg_mc.target.joints_data = [point.positions[i]/0.01745 for i in range(len(point.positions))] + [0.0]
-        #print (self.msg_mc)
-        #print("###################")
+        self.msg_mc.target.joints_data = [point.positions[i] / 0.01745 for i in range(len(point.positions))] + [0.0]
+        # print (self.msg_mc)
+        # print("###################")
         return self.msg_mc
 
     def create_jog_joint_command_message(self, sign):
@@ -309,17 +312,21 @@ class EdoStates(object):
         # Convert back command from radians to degrees
         # TODO: How can we exploit acceleration to provide ff_velocity and maybe current instead of 0, 0, 0?
         # add one zero at the end cause the message JointControl changed in version 3.0 of edo
-        self.msg_jca.joints = [JointControl(point.positions[i]/0.01745, point.velocities[i]/0.01745, 0, 0, 0, 0) for i in range(6)] + [JointControl(self.gripper_position, 0, 0, 0, 0, 0)]
+        self.msg_jca.joints = [JointControl(point.positions[i] / 0.01745, point.velocities[i] / 0.01745, 0, 0, 0, 0) for
+                               i in range(6)] + [JointControl(self.gripper_position, 0, 0, 0, 0, 0)]
         return self.msg_jca
 
     def calibration(self):
         if self.edo_current_state == self.CS_CALIBRATED and self.edo_opcode == 0:
             rospy.logwarn("Robot was already calibrated, going for a new calibration...")
-            rospy.logerr("Recalibrating a calibrated robot may requires reboot if it doesn't jog, see https://github.com/ymollard/eDO_control/issues/2")
+            rospy.logerr(
+                "Recalibrating a calibrated robot may requires reboot if it doesn't jog, see https://github.com/ymollard/eDO_control/issues/2")
         else:
-            while not (self.edo_current_state == self.CS_NOT_CALIBRATED and self.edo_opcode == self.OP_JOINT_UNCALIBRATED) and not rospy.is_shutdown():
-                rospy.loginfo("Waiting machine state CS_NOT_CALIBRATED (currently {}) and opcode OP_CS_NOT_CALIBRATED (currently {})...".format(
-                    self.get_current_code_string(), self.get_current_opcode_messages()))
+            while not (
+                    self.edo_current_state == self.CS_NOT_CALIBRATED and self.edo_opcode == self.OP_JOINT_UNCALIBRATED) and not rospy.is_shutdown():
+                rospy.loginfo(
+                    "Waiting machine state CS_NOT_CALIBRATED (currently {}) and opcode OP_CS_NOT_CALIBRATED (currently {})...".format(
+                        self.get_current_code_string(), self.get_current_opcode_messages()))
                 self.update()
                 rospy.sleep(1)
 
@@ -337,7 +344,7 @@ class EdoStates(object):
 
         while not rospy.is_shutdown():
             # key = getkey()
-            print(self.current_command.state)
+            # print(self.current_command.state)
             # time.sleep(2)
             if self.current_command.state == Button.UP:
                 if self._edo_jog_speed < self.JOG_SPEED_MAX:
@@ -358,7 +365,7 @@ class EdoStates(object):
                 self.current_joint = (self.current_joint - 1) % self.NUMBER_OF_JOINTS
                 rospy.loginfo("Calibrating joint %d", self.current_joint + 1)
             elif self.current_command.state == Button.ENTER:
-                if self.current_joint < 0 or self.current_joint > self.NUMBER_OF_JOINTS-1:
+                if self.current_joint < 0 or self.current_joint > self.NUMBER_OF_JOINTS - 1:
                     rospy.logerr("Wrong number of joint %d", self.current_joint)
                     break
                 msg_jc = JointCalibration()
@@ -368,7 +375,7 @@ class EdoStates(object):
                 # increase joint number or/and quit the calibration procedure
                 self.current_joint += 1
 
-                if self.current_joint >= self.NUMBER_OF_JOINTS-1:
+                if self.current_joint >= self.NUMBER_OF_JOINTS - 1:
                     self.current_joint = 0
                     rospy.sleep(1)
                     return self.edo_current_state == self.CS_CALIBRATED and self.edo_opcode == 0
@@ -467,14 +474,16 @@ class EdoStates(object):
             self.send_first_step_bool = True
             self.select_6_axis_with_gripper_edo()
 
-        if self.edo_current_state == self.CS_BRAKED and self.edo_opcode == (self.OP_JOINT_UNCALIBRATED | self.OP_BRAKE_ACTIVE) \
+        if self.edo_current_state == self.CS_BRAKED and self.edo_opcode == (
+                self.OP_JOINT_UNCALIBRATED | self.OP_BRAKE_ACTIVE) \
                 and not self.send_second_step_bool:
             # disengage brakes to uncalibrated robot
             self.send_second_step_bool = True
             self.disengage_brakes()
 
         if self.edo_current_state == self.CS_INIT and \
-                (self.edo_opcode == self.OP_BRAKE_ACTIVE or self.edo_opcode == (self.OP_BRAKE_ACTIVE | self.OP_JOINT_UNCALIBRATED)) \
+                (self.edo_opcode == self.OP_BRAKE_ACTIVE or self.edo_opcode == (
+                        self.OP_BRAKE_ACTIVE | self.OP_JOINT_UNCALIBRATED)) \
                 and not self.reselect_joints_bool:
             # according to tablet, select 7 joints again and start from scratch...
             self.reselect_joints_bool = True
@@ -499,4 +508,5 @@ class EdoStates(object):
                 self.disengage_brakes_bool = False
             self.read_input_bool = True
 
-ordered_joint_names = ["edo_joint_" + str(j+1) for j in range(EdoStates.NUMBER_OF_JOINTS)]
+
+ordered_joint_names = ["edo_joint_" + str(j + 1) for j in range(EdoStates.NUMBER_OF_JOINTS)]

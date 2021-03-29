@@ -12,6 +12,7 @@ from pynput.keyboard import Key, Controller
 import rospy
 from states import EdoStates
 from util import Button, StateWrapper
+from edo_core_msgs.msg import JointReset
 
 set_env_var()
 ip = os.getenv('IP')
@@ -23,7 +24,7 @@ BASE_PATH = '/home/szymon/catkin_ws/src/calib/src/'
 
 
 class Calibration_view(qtw.QWidget):
-    def __init__(self):
+    def __init__(self, states, command):
         super(Calibration_view, self).__init__()
         self.joint_counter = 1
 
@@ -75,29 +76,30 @@ class Calibration_view(qtw.QWidget):
 
         self.keyboard = Controller()
 
-        self.command = StateWrapper(Button.NONE)
         print('started to calibrate')
-        self.states = EdoStates(enable_algorithm_node=True, current_command=self.command)
+        self.command = command
+        # self.states = EdoStates(enable_algorithm_node=True, current_command=self.command)
+        self.states = states
+
         self.x = threading.Thread(target=self.calibrate_thread, args=(self.states,))
         self.x.daemon = True
         self.x.start()
-        # subprocess.run(['powershell', '-Command', './scripts/calibration.ps1'])
 
     @pyqtSlot()
     def arrow_left(self):
-        print('<')
+        pass
 
     @pyqtSlot()
     def arrow_right(self):
-        print('>')
+        pass
 
     @pyqtSlot()
     def arrow_down(self):
-        print('down')
+        pass
 
     @pyqtSlot()
     def arrow_up(self):
-        print('^')
+        pass
 
     @pyqtSlot()
     def fake_enter(self):
@@ -175,8 +177,10 @@ class Calibration_view(qtw.QWidget):
 
 
 class Display(qtw.QWidget):
-    def __init__(self):
+    def __init__(self, states, command):
         super(Display, self).__init__()
+        self.command = command
+        self.states = states
         self.setWindowTitle('Controller')
         self.button_layout = qtw.QGridLayout()
         self.button_layout.setColumnStretch(0, 2)
@@ -194,7 +198,7 @@ class Display(qtw.QWidget):
 
     ### GENERAL UI ADDER
     def addUI(self):
-        label = qtw.QLabel("STATUS: {}".format('robot status'))
+        label = qtw.QLabel("STATUS: {}".format(self.states.get_current_code_string()))
         self.button_layout.addWidget(label, 0, 0, 1, 2, alignment=QtCore.Qt.AlignRight)
 
         svg_icon = add_svg(BASE_PATH + 'imgs/process.svg')
@@ -212,7 +216,7 @@ class Display(qtw.QWidget):
 
     ### PARTICULAR WIDGET ADDERS
     def show_calibration(self):
-        self.calibration_gui = Calibration_view()
+        self.calibration_gui = Calibration_view(self.states, self.command)
         if is_raspberry:
             self.calibration_gui.showFullScreen()
         else:
@@ -233,15 +237,27 @@ def add_svg(path):
     return svg_widget
 
 
-def unbreak(self):
-    if not is_raspberry:
-        print('unbreak')
-    else:
-        try:
-            subprocess.call(BASE_PATH + 'scripts/unbreak.bash')
-        except Exception as e:
-            print(e)
-            raise
+def unbreak():
+    unbreak_ros_message()
+    # if not is_raspberry:
+    #     print('unbreak')
+    # else:
+    #     try:
+    #         subprocess.call(BASE_PATH + 'scripts/unbreak.bash')
+    #     except Exception as e:
+    #         print(e)
+    #         raise
+
+
+def unbreak_ros_message():
+    _joint_reset_command_pub = rospy.Publisher('/bridge_jnt_reset', JointReset, queue_size=10, latch=True)
+    rospy.loginfo("Trying to disengage brakes...")
+    msg_jr = JointReset()
+    msg_jr.joints_mask = 63
+    msg_jr.disengage_steps = 2000
+    msg_jr.disengage_offset = 3.5
+    _joint_reset_command_pub.publish(msg_jr)  # /bridge_jnt_reset
+    rospy.loginfo("Brakes should be disengaged")
 
 
 def add_shadow():
@@ -265,9 +281,13 @@ def add_button(name, func, wid=230, hei=130, icon_path=''):
 
 
 def start():
+    # initialize robot state and robot command object here, so that one reference is passed to the classes
+    command = StateWrapper(Button.NONE)
+    states = EdoStates(enable_algorithm_node=True, current_command=command)
+
     app = qtw.QApplication([])
     app.setFont(QFont('Microsoft YaHei Light', 13))
-    mw = Display()
+    mw = Display(states, command)
     mw.setFixedSize(width, height)
     if is_raspberry:
         subprocess.run(BASE_PATH + 'scripts/start.bash')
