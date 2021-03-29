@@ -59,14 +59,15 @@ class EdoStates(object):
         self.send_first_step_bool = False  # select 6-axis configuration
         self.send_second_step_bool = False  # disconnect the brakes
         self.send_third_step_bool = False  # calibration process will start
-        self._current_joint = 0
+        self.current_joint = 0
         self.current_joint_states = None
         self._sent_next_movement_command_bool = False
 
         self.reselect_joints_bool = False
 
         self.disengage_brakes_timer = None
-        self.disengage_brakes_bool = False
+        # self.disengage_brakes_bool = False
+        self.disengage_brakes_bool = True
         self.read_input_bool = False
 
         self.msg_jca = JointControlArray()
@@ -296,7 +297,7 @@ class EdoStates(object):
         self.msg_mc.target.data_type = 74
         self.msg_mc.target.joints_mask = 127
         self.msg_mc.target.joints_data = [0.0] * 10
-        self.msg_mc.target.joints_data[self._current_joint] = sign * self._edo_jog_speed
+        self.msg_mc.target.joints_data[self.current_joint] = sign * self._edo_jog_speed
         return self.msg_mc
 
     def create_joint_command_message(self, joint_names, point):
@@ -318,19 +319,18 @@ class EdoStates(object):
                 self.update()
                 rospy.sleep(1)
 
-        if rospy.is_shutdown(): return False
+        if rospy.is_shutdown():
+            return False
 
         # calibrating just first 6 joints!!!
-        self._current_joint = 0  # always start calibration procedure with first joint
+        self.current_joint = 0  # always start calibration procedure with first joint
 
-        def display_help():
-            rospy.loginfo("Entering jog/calibration loop")
-            rospy.loginfo("    Use up/down arrows to increase/decrease jog speed")
-            rospy.loginfo("    Use left/right arrows to jog joint")
-            rospy.loginfo("    Use Enter to calibrate current joint and switch to next one")
-            rospy.loginfo("Calibrating joint %d", self._current_joint + 1)
+        rospy.loginfo("Entering jog/calibration loop")
+        rospy.loginfo("    Use up/down arrows to increase/decrease jog speed")
+        rospy.loginfo("    Use left/right arrows to jog joint")
+        rospy.loginfo("    Use Enter to calibrate current joint and switch to next one")
+        rospy.loginfo("Calibrating joint %d", self.current_joint + 1)
 
-        display_help()
         while not rospy.is_shutdown():
             key = getkey()
             if key == keys.UP:
@@ -346,34 +346,33 @@ class EdoStates(object):
             elif key == keys.LEFT:
                 self.jog_command_pub.publish(self.create_jog_joint_command_message(-1))
             elif key == keys.PLUS:
-                self._current_joint = (self._current_joint + 1) % self.NUMBER_OF_JOINTS
-                rospy.loginfo("Calibrating joint %d", self._current_joint + 1)
+                self.current_joint = (self.current_joint + 1) % self.NUMBER_OF_JOINTS
+                rospy.loginfo("Calibrating joint %d", self.current_joint + 1)
             elif key == keys.MINUS:
-                self._current_joint = (self._current_joint - 1) % self.NUMBER_OF_JOINTS
-                rospy.loginfo("Calibrating joint %d", self._current_joint + 1)
+                self.current_joint = (self.current_joint - 1) % self.NUMBER_OF_JOINTS
+                rospy.loginfo("Calibrating joint %d", self.current_joint + 1)
             elif key == keys.ENTER:
-                if self._current_joint < 0 or self._current_joint > self.NUMBER_OF_JOINTS-1:
-                    rospy.logerr("Wrong number of joint %d", self._current_joint)
+                if self.current_joint < 0 or self.current_joint > self.NUMBER_OF_JOINTS-1:
+                    rospy.logerr("Wrong number of joint %d", self.current_joint)
                     break
                 msg_jc = JointCalibration()
-                msg_jc.joints_mask = 1 << self._current_joint
+                msg_jc.joints_mask = 1 << self.current_joint
                 self._joint_calibration_command_pub.publish(msg_jc)
 
                 # increase joint number or/and quit the calibration procedure
-                self._current_joint += 1
+                self.current_joint += 1
 
-                if self._current_joint >= self.NUMBER_OF_JOINTS-1:
-                    self._current_joint = 0
+                if self.current_joint >= self.NUMBER_OF_JOINTS-1:
+                    self.current_joint = 0
                     rospy.sleep(1)
                     return self.edo_current_state == self.CS_CALIBRATED and self.edo_opcode == 0
                 else:
-                    rospy.loginfo("Calibrating joint %d...", self._current_joint + 1)
+                    rospy.loginfo("Calibrating joint %d...", self.current_joint + 1)
             elif key == keys.ESC:
                 rospy.loginfo("Calibration NOT finished for all joints, exiting jog loop")
                 break
             else:
                 rospy.logwarn("Wrong button was pressed")
-                display_help()
 
     def jog(self):
 
@@ -381,7 +380,7 @@ class EdoStates(object):
         rospy.loginfo("    Use up/down arrows to increase/decrease jog speed")
         rospy.loginfo("    Use left/right arrows to jog joint")
         rospy.loginfo("    Use +/- to increase/decrease joint number")
-        rospy.loginfo("Jogging joint %d", self._current_joint + 1)
+        rospy.loginfo("Jogging joint %d", self.current_joint + 1)
 
         while not rospy.is_shutdown():
             key = getkey()
@@ -398,11 +397,11 @@ class EdoStates(object):
             elif key == keys.LEFT:
                 self.jog_command_pub.publish(self.create_jog_joint_command_message(-1))
             elif key == keys.PLUS:
-                self._current_joint = (self._current_joint + 1) % self.NUMBER_OF_JOINTS
-                rospy.loginfo("Jogging joint %d", self._current_joint + 1)
+                self.current_joint = (self.current_joint + 1) % self.NUMBER_OF_JOINTS
+                rospy.loginfo("Jogging joint %d", self.current_joint + 1)
             elif key == keys.MINUS:
-                self._current_joint = (self._current_joint - 1) % self.NUMBER_OF_JOINTS
-                rospy.loginfo("Jogging joint %d", self._current_joint + 1)
+                self.current_joint = (self.current_joint - 1) % self.NUMBER_OF_JOINTS
+                rospy.loginfo("Jogging joint %d", self.current_joint + 1)
             elif key == keys.ESC:
                 rospy.loginfo("Exiting joint jog loop")
                 break
