@@ -94,6 +94,9 @@ class EdoStates(object):
         self._joint_calibration_command_pub = rospy.Publisher('/bridge_jnt_calib', JointCalibration, queue_size=10,
                                                               latch=True)
 
+        self._emergency_stop_pub = rospy.Publisher('/emergency_stop', Bool, queue_size=10, latch=True)
+        self._emergency_stop_pub.publish(Bool(False))
+
         rospy.Subscriber('/machine_movement_ack', MovementFeedback, self.move_ack_callback)
 
         # collision disabled to prevent robot from falling during movement
@@ -261,7 +264,14 @@ class EdoStates(object):
         self._joint_init_command_pub.publish(msg_ji)  # /bridge_init
         rospy.loginfo("Message sent, 6-axis configuration was selected")
 
-    def disengage_brakes(self):
+    def do_emergency_stop(self):
+        self._emergency_stop_pub.publish(Bool(True))
+
+    def unbreak(self):
+        self.wait_for_the_robot_to_initialize(expected_state=self.CS_BRAKED)
+        self._disengage_brakes()
+
+    def _disengage_brakes(self):
         rospy.loginfo("Trying to disengage brakes...")
         msg_jr = JointReset()
         msg_jr.joints_mask = (1 << self.NUMBER_OF_JOINTS) - 1
@@ -272,7 +282,7 @@ class EdoStates(object):
 
     def disengage_brakes_callback(self, timer_event):
         # TODO check what I can do with parameter event
-        self.disengage_brakes()
+        self._disengage_brakes()
 
     def create_jog_joints_command_message(self, values):
         self.msg_mc.move_command = 74
@@ -316,19 +326,22 @@ class EdoStates(object):
                                i in range(6)] + [JointControl(self.gripper_position, 0, 0, 0, 0, 0)]
         return self.msg_jca
 
-    def calibration(self):
+    def wait_for_the_robot_to_initialize(self, expected_state):
         if self.edo_current_state == self.CS_CALIBRATED and self.edo_opcode == 0:
             rospy.logwarn("Robot was already calibrated, going for a new calibration...")
             rospy.logerr(
                 "Recalibrating a calibrated robot may requires reboot if it doesn't jog, see https://github.com/ymollard/eDO_control/issues/2")
         else:
             while not (
-                    self.edo_current_state == self.CS_NOT_CALIBRATED and self.edo_opcode == self.OP_JOINT_UNCALIBRATED) and not rospy.is_shutdown():
+                    self.edo_current_state == expected_state and self.edo_opcode == self.OP_JOINT_UNCALIBRATED) and not rospy.is_shutdown():
                 rospy.loginfo(
                     "Waiting machine state CS_NOT_CALIBRATED (currently {}) and opcode OP_CS_NOT_CALIBRATED (currently {})...".format(
                         self.get_current_code_string(), self.get_current_opcode_messages()))
                 self.update()
                 rospy.sleep(1)
+
+    def calibration(self):
+        self.wait_for_the_robot_to_initialize(expected_state=self.CS_NOT_CALIBRATED)
 
         if rospy.is_shutdown():
             return False
@@ -343,9 +356,6 @@ class EdoStates(object):
         rospy.loginfo("Calibrating joint %d", self.current_joint + 1)
 
         while not rospy.is_shutdown():
-            # key = getkey()
-            # print(self.current_command.state)
-            # time.sleep(2)
             if self.current_command.state == Button.UP:
                 if self._edo_jog_speed < self.JOG_SPEED_MAX:
                     self._edo_jog_speed += 0.1
@@ -393,47 +403,6 @@ class EdoStates(object):
             else:
                 rospy.logwarn("Wrong button was pressed")
 
-            # if key == keys.UP:
-            #     if self._edo_jog_speed < self.JOG_SPEED_MAX:
-            #         self._edo_jog_speed += 0.1
-            #         rospy.loginfo("Jog speed: %.1f", self._edo_jog_speed)
-            # elif key == keys.DOWN:
-            #     if self._edo_jog_speed > self.JOG_SPEED_MIN:
-            #         self._edo_jog_speed -= 0.1
-            #         rospy.loginfo("Jog speed: %.1f", self._edo_jog_speed)
-            # elif key == keys.RIGHT:
-            #     self.jog_command_pub.publish(self.create_jog_joint_command_message(1))
-            # elif key == keys.LEFT:
-            #     self.jog_command_pub.publish(self.create_jog_joint_command_message(-1))
-            # elif key == keys.PLUS:
-            #     self.current_joint = (self.current_joint + 1) % self.NUMBER_OF_JOINTS
-            #     rospy.loginfo("Calibrating joint %d", self.current_joint + 1)
-            # elif key == keys.MINUS:
-            #     self.current_joint = (self.current_joint - 1) % self.NUMBER_OF_JOINTS
-            #     rospy.loginfo("Calibrating joint %d", self.current_joint + 1)
-            # elif key == keys.ENTER:
-            #     if self.current_joint < 0 or self.current_joint > self.NUMBER_OF_JOINTS-1:
-            #         rospy.logerr("Wrong number of joint %d", self.current_joint)
-            #         break
-            #     msg_jc = JointCalibration()
-            #     msg_jc.joints_mask = 1 << self.current_joint
-            #     self._joint_calibration_command_pub.publish(msg_jc)
-            #
-            #     # increase joint number or/and quit the calibration procedure
-            #     self.current_joint += 1
-            #
-            #     if self.current_joint >= self.NUMBER_OF_JOINTS-1:
-            #         self.current_joint = 0
-            #         rospy.sleep(1)
-            #         return self.edo_current_state == self.CS_CALIBRATED and self.edo_opcode == 0
-            #     else:
-            #         rospy.loginfo("Calibrating joint %d...", self.current_joint + 1)
-            # elif key == keys.ESC:
-            #     rospy.loginfo("Calibration NOT finished for all joints, exiting jog loop")
-            #     break
-            # else:
-            #     rospy.logwarn("Wrong button was pressed")
-
     def jog(self):
 
         rospy.loginfo("Entering jog loop")
@@ -479,7 +448,7 @@ class EdoStates(object):
                 and not self.send_second_step_bool:
             # disengage brakes to uncalibrated robot
             self.send_second_step_bool = True
-            self.disengage_brakes()
+            self._disengage_brakes()
 
         if self.edo_current_state == self.CS_INIT and \
                 (self.edo_opcode == self.OP_BRAKE_ACTIVE or self.edo_opcode == (

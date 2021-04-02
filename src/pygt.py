@@ -1,18 +1,16 @@
 #!/usr/bin/env python
 
+import rospy
+from std_msgs.msg import Bool
 import threading
+import os
 import PyQt4.QtGui as qtw
 from PyQt4 import QtSvg, QtCore
 from PyQt4.QtCore import pyqtSlot
-import subprocess
 from PyQt4.QtGui import QFont, QIcon
-import os
 from env import set_env_var
-from pynput.keyboard import Key, Controller
-import rospy
-from states import EdoStates
 from util import Button, StateWrapper
-from edo_core_msgs.msg import JointReset
+from states import EdoStates
 
 set_env_var()
 ip = os.getenv('IP')
@@ -21,6 +19,7 @@ height = int(os.getenv('HEIGHT'))
 width = int(os.getenv('WIDTH'))
 is_raspberry = bool(os.getenv('RASP'))
 BASE_PATH = '/home/szymon/catkin_ws/src/calib/src/'
+# BASE_PATH = '/home/szymon/catkin_ws/src/calib/src/'
 
 
 class Calibration_view(qtw.QWidget):
@@ -61,7 +60,7 @@ class Calibration_view(qtw.QWidget):
         btn_down.pressed.connect(self.down_arrow_pressed)
         btn_down.released.connect(self.down_arrow_released)
 
-        btn_break = add_button('UNBREAK', unbreak, 190, 100)
+        btn_break = add_button('UNBREAK', states.unbreak, 190, 100)
         btn_break.setStyleSheet('background-color: chocolate')
         shade_unbreak_btn = add_shadow()
         btn_break.setGraphicsEffect(shade_unbreak_btn)
@@ -74,11 +73,8 @@ class Calibration_view(qtw.QWidget):
 
         self.setLayout(layout)
 
-        self.keyboard = Controller()
-
         print('started to calibrate')
         self.command = command
-        # self.states = EdoStates(enable_algorithm_node=True, current_command=self.command)
         self.states = states
 
         self.x = threading.Thread(target=self.calibrate_thread, args=(self.states,))
@@ -205,8 +201,8 @@ class Display(qtw.QWidget):
         self.button_layout.addWidget(svg_icon, 0, 0, 1, 2, alignment=QtCore.Qt.AlignCenter)
 
         btn1 = add_button('START', self.start)
-        btn2 = add_button('STOP', self.stop)
-        btn3 = add_button('UNBREAK', unbreak)
+        btn2 = add_button('STOP', self.states.do_emergency_stop)
+        btn3 = add_button('UNBREAK', self.states.unbreak)
         btn4 = add_button('CALIBRATE', self.show_calibration)
 
         self.button_layout.addWidget(btn1, 1, 1)
@@ -228,6 +224,7 @@ class Display(qtw.QWidget):
 
     def stop(self):
         print('stop')
+        self._joint_init_command_pub = rospy.Publisher('/bridge_init', JointInit, queue_size=10, latch=True)
 
 
 ###COMMONS
@@ -235,29 +232,6 @@ def add_svg(path):
     svg_widget = QtSvg.QSvgWidget(path)
     svg_widget.setFixedSize(100, 100)
     return svg_widget
-
-
-def unbreak():
-    unbreak_ros_message()
-    # if not is_raspberry:
-    #     print('unbreak')
-    # else:
-    #     try:
-    #         subprocess.call(BASE_PATH + 'scripts/unbreak.bash')
-    #     except Exception as e:
-    #         print(e)
-    #         raise
-
-
-def unbreak_ros_message():
-    _joint_reset_command_pub = rospy.Publisher('/bridge_jnt_reset', JointReset, queue_size=10, latch=True)
-    rospy.loginfo("Trying to disengage brakes...")
-    msg_jr = JointReset()
-    msg_jr.joints_mask = 63
-    msg_jr.disengage_steps = 2000
-    msg_jr.disengage_offset = 3.5
-    _joint_reset_command_pub.publish(msg_jr)  # /bridge_jnt_reset
-    rospy.loginfo("Brakes should be disengaged")
 
 
 def add_shadow():
@@ -290,7 +264,6 @@ def start():
     mw = Display(states, command)
     mw.setFixedSize(width, height)
     if is_raspberry:
-        subprocess.run(BASE_PATH + 'scripts/start.bash')
         mw.showFullScreen()
     else:
         mw.show()
