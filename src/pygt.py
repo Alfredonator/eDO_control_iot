@@ -11,6 +11,7 @@ from PyQt4.QtGui import QFont, QIcon
 from env import set_env_var
 from util import Button, StateWrapper
 from states import EdoStates
+import voice_assistant
 
 set_env_var()
 ip = os.getenv('IP')
@@ -278,4 +279,6 @@ def start():
 
 if __name__ == '__main__':
     rospy.init_node('edo_calibrate', anonymous=True)
+    speech = threading.Thread(target=voice_assistant.init())
+    speech.start()
     start()

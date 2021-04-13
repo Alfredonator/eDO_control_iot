@@ -37,11 +37,6 @@ def main():
 
     x.join()
 
-    # keyboard = Controller()
-    # keyboard.press(Key.enter)
-    # time.sleep(2)
-    # keyboard.release(Key.enter)
-
 
 if __name__ == '__main__':
     rospy.init_node('edo_calibrate', anonymous=True)
