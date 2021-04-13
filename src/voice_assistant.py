@@ -69,7 +69,7 @@ def init():
                 if action_publisher:
                     action_publisher.kill()
                 action_publisher = subprocess.Popen(
-                    ["rostopic", "pub", "-r", "/robot_operation", "std_msgs/String", "start"],
+                    ["rostopic", "pub", "-r", "20", "/robot_operation", "std_msgs/String", "start"],
                     env={'ROS_MASTER_URI': 'http://10.42.0.49:11311\''})
                 break
             elif 'stop' in command:
@@ -77,7 +77,7 @@ def init():
                 if action_publisher:
                     action_publisher.kill()
                 action_publisher = subprocess.Popen(
-                    ["rostopic", "pub", "-r", "/robot_operation", "std_msgs/String", "stop"],
+                    ["rostopic", "pub", "-r", "20", "/robot_operation", "std_msgs/String", "stop"],
                     env={'ROS_MASTER_URI': 'http://10.42.0.49:11311\''})
                 break
             elif 'velocity' in command and numbers:
@@ -88,7 +88,7 @@ def init():
                 if velocity_publisher:
                     velocity_publisher.kill()
                 velocity_publisher = subprocess.Popen(
-                    ["rostopic", "pub", "-r", "/robot_velocity", "std_msgs/String", f'"{numbers}"'],
+                    ["rostopic", "pub", "-r", "20", "/robot_velocity", "std_msgs/String", f'"{numbers}"'],
                     env={'ROS_MASTER_URI': 'http://10.42.0.49:11311\''})
                 break
             elif 'joke' in command:
