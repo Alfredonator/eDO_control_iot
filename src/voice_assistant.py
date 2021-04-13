@@ -68,9 +68,8 @@ def init():
                 _respond("Starting robot")
                 if action_publisher:
                     action_publisher.kill()
-                action_publisher = subprocess.Popen(
-                    ["bash", "-c", "/opt/ros/melodic/bin/rostopic pub -r 20 /robot_operation std_msgs/String start"],
-                    env={'ROS_MASTER_URI': 'http://10.42.0.49:11311\''})
+                commad_sh = "/opt/ros/melodic/bin/rostopic pub -r 20 /robot_operation std_msgs/String start"
+                action_publisher = subprocess.Popen(command_sh.split())
                 break
             elif 'stop' in command:
                 _respond("Stopping the robot")
