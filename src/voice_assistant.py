@@ -4,11 +4,24 @@ import pyttsx3
 from playsound import playsound
 import re
 import subprocess
+import pygame
 
 engine = pyttsx3.init()
 engine.setProperty('rate', 150)
 velocity_publisher = None
 action_publisher = None
+
+
+def _play_close():
+    pygame.mixer.init()
+    pygame.mixer.music.load("media/close.mp3")
+    pygame.mixer.music.play()
+
+
+def _play_listen():
+    pygame.mixer.init()
+    pygame.mixer.music.load("media/listening.mp3")
+    pygame.mixer.music.play()
 
 
 def _talk():
@@ -43,7 +56,7 @@ def init():
         if "hi bob" not in text:
             continue
 
-        playsound('./media/listening.mp3')
+        _play_listen()
 
         attempt = 0
         while attempt < 3:
@@ -90,8 +103,7 @@ def init():
                 attempt = attempt + 1
 
         if attempt == 3:
-            playsound('./media/close.mp3')
-
+            _play_close()
 
 if __name__ == '__main__':
     init()
