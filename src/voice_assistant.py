@@ -8,8 +8,6 @@ import pygame
 
 engine = pyttsx3.init()
 engine.setProperty('rate', 150)
-velocity_publisher = None
-action_publisher = None
 
 
 def _play_close():
@@ -45,6 +43,8 @@ def _respond(output):
 
 
 def init():
+    action_publisher = None
+    velocity_publisher = None
     _respond("Hi, I am Bob your personal robot")
 
     while 1:
@@ -104,6 +104,7 @@ def init():
 
         if attempt == 3:
             _play_close()
+
 
 if __name__ == '__main__':
     init()
