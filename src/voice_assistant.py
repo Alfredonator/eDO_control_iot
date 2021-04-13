@@ -69,7 +69,8 @@ def init():
                 if action_publisher:
                     action_publisher.kill()
                 action_publisher = subprocess.Popen(
-                    ["/bin/bash", "/opt/ros/melodic/bin/rostopic", "pub", "-r", "20", "/robot_operation", "std_msgs/String", "start"],
+                    '/opt/ros/melodic/bin/rostopic pub -r 20 /robot_operation std_msgs/String start',
+                    shell=True,
                     env={'ROS_MASTER_URI': 'http://10.42.0.49:11311\''})
                 break
             elif 'stop' in command:
