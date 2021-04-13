@@ -68,16 +68,16 @@ def init():
                 _respond("Starting robot")
                 if action_publisher:
                     action_publisher.kill()
+
                 command_sh = "/opt/ros/melodic/bin/rostopic pub -r 20 /robot_operation std_msgs/String start"
-                action_publisher = subprocess.Popen(command_sh.split(), env={'ROS_MASTER_URI': 'http://10.42.0.49:11311\''})
+                action_publisher = subprocess.Popen(command_sh.split())
                 break
             elif 'stop' in command:
                 _respond("Stopping the robot")
                 if action_publisher:
                     action_publisher.kill()
-                action_publisher = subprocess.Popen(
-                    ["/bin/bash", "/opt/ros/melodic/bin/rostopic", "pub", "-r", "20", "/robot_operation", "std_msgs/String", "stop"],
-                    env={'ROS_MASTER_URI': 'http://10.42.0.49:11311\''})
+                command_sh = "/opt/ros/melodic/bin/rostopic pub -r 20 /robot_operation std_msgs/String stop"
+                action_publisher = subprocess.Popen(command_sh.split())
                 break
             elif 'velocity' in command and numbers:
                 if int(numbers[0]) < 0 or 10 < int(numbers[0]):
@@ -86,9 +86,9 @@ def init():
                 _respond("Setting speed to " + str(numbers))
                 if velocity_publisher:
                     velocity_publisher.kill()
-                velocity_publisher = subprocess.Popen(
-                    ["/bin/bash", "/opt/ros/melodic/bin/rostopic", "pub", "-r", "20", "/robot_velocity", "std_msgs/String", f'"{numbers}"'],
-                    env={'ROS_MASTER_URI': 'http://10.42.0.49:11311\''})
+
+                command_sh = "/opt/ros/melodic/bin/rostopic pub -r 20 /robot_velocity std_msgs/String " + numbers[0]
+                action_publisher = subprocess.Popen(command_sh.split())
                 break
             elif 'joke' in command:
                 _respond("What did the man say to his dead robot?")
