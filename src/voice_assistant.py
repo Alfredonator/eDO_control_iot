@@ -69,14 +69,14 @@ def init():
                 if action_publisher:
                     action_publisher.kill()
 
-                command_sh = "/opt/ros/melodic/bin/rostopic pub -r 20 /robot_operation std_msgs/String start"
+                command_sh = "/opt/ros/melodic/bin/rostopic pub -r 1 /robot_operation std_msgs/String start"
                 action_publisher = subprocess.Popen(command_sh.split())
                 break
             elif 'stop' in command:
                 _respond("Stopping the robot")
                 if action_publisher:
                     action_publisher.kill()
-                command_sh = "/opt/ros/melodic/bin/rostopic pub -r 20 /robot_operation std_msgs/String stop"
+                command_sh = "/opt/ros/melodic/bin/rostopic pub -r 1 /robot_operation std_msgs/String stop"
                 action_publisher = subprocess.Popen(command_sh.split())
                 break
             elif 'velocity' in command and numbers:
@@ -87,7 +87,7 @@ def init():
                 if velocity_publisher:
                     velocity_publisher.kill()
 
-                command_sh = "/opt/ros/melodic/bin/rostopic pub -r 20 /robot_velocity std_msgs/String " + numbers[0]
+                command_sh = "/opt/ros/melodic/bin/rostopic pub -r 1 /robot_velocity std_msgs/String " + numbers[0]
                 action_publisher = subprocess.Popen(command_sh.split())
                 break
             elif 'joke' in command:
@@ -97,6 +97,10 @@ def init():
                 time.sleep(0.5)
                 _respond("HA HA HA")
                 break
+            elif 'candle' in command or 'home' in command:
+                _respond("Homing robotic arm")
+                command_sh = "/opt/ros/melodic/bin/rostopic pub -r 1 --once /robot_operation std_msgs/String home"
+                action_publisher = subprocess.Popen(command_sh.split())
             else:
                 _respond("Operation not available")
                 attempt = attempt + 1

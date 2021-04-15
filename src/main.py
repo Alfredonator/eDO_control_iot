@@ -9,8 +9,6 @@ from states import EdoStates
 
 
 def calibrate_thread(states):
-
-    calibrated = False
     rospy.logwarn("Starting robot calibration procedure...")
     try:
         calibrated = states.calibration()

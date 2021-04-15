@@ -279,5 +279,5 @@ def start():
 
 if __name__ == '__main__':
     rospy.init_node('edo_calibrate', anonymous=True)
-    subprocess.Popen(["python3", "voice_assistant.py"])
+    subprocess.Popen(["python3", "src/voice_assistant.py"])
     start()
