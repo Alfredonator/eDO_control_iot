@@ -71,14 +71,14 @@ def init():
                 if action_publisher is not None:
                     action_publisher.kill()
 
-                command_sh = "/opt/ros/melodic/bin/rostopic pub -r 1 /robot_operation std_msgs/String start"
+                command_sh = "/opt/ros/melodic/bin/rostopic pub -r 30 /robot_operation std_msgs/String start"
                 action_publisher = subprocess.Popen(command_sh.split())
                 break
             elif 'stop' in command:
                 _respond("Stopping the robot")
                 if action_publisher is not None:
                     action_publisher.kill()
-                command_sh = "/opt/ros/melodic/bin/rostopic pub -r 1 /robot_operation std_msgs/String stop"
+                command_sh = "/opt/ros/melodic/bin/rostopic pub -r 30 /robot_operation std_msgs/String stop"
                 action_publisher = subprocess.Popen(command_sh.split())
                 break
             elif 'velocity' in command and numbers:
