@@ -12,7 +12,7 @@ from env import set_env_var
 from util import Button, StateWrapper
 from states import EdoStates
 import subprocess
-import shlex
+import re
 
 set_env_var()
 ip = os.getenv('IP')
@@ -203,13 +203,17 @@ class Display(qtw.QWidget):
 
         btn1 = add_button('START', self.start)
         btn2 = add_button('STOP', self.states.do_emergency_stop)
-        btn3 = add_button('UNBREAK', unbreak())
+        btn3 = add_button('UNBREAK', self.unbreak())
         btn4 = add_button('CALIBRATE', self.show_calibration)
 
         self.button_layout.addWidget(btn1, 1, 1)
         self.button_layout.addWidget(btn2, 1, 0)
         self.button_layout.addWidget(btn3, 2, 0)
         self.button_layout.addWidget(btn4, 2, 1)
+
+    def unbreak(self):
+        command_sh = 'rostopic pub bridge_jnt_reset --once edo_core_msgs/JointReset "{joints_mask: 63, disengage_steps: 2000, disengage_offset: 3.5}"'
+        subprocess.Popen(re.findall(r'(?:[^\s,"]|"(?:\\.|[^"])*")+', command_sh))
 
     ### PARTICULAR WIDGET ADDERS
     def show_calibration(self):
@@ -233,11 +237,6 @@ def add_svg(path):
     svg_widget = QtSvg.QSvgWidget(path)
     svg_widget.setFixedSize(100, 100)
     return svg_widget
-
-
-def unbreak():
-    command_sh = 'rostopic pub bridge_jnt_reset --once edo_core_msgs/JointReset "{joints_mask: 63, disengage_steps: 2000, disengage_offset: 3.5}"'
-    subprocess.Popen(shlex.split(command_sh))
 
 
 def add_shadow():
