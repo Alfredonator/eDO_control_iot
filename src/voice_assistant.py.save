@@ -12,15 +12,13 @@ engine.setProperty('rate', 150)
 
 def _play_close():
     pygame.mixer.init()
-    pygame.mixer.music.load(
-    "/home/pi/edo_ws/src/calib/src/media/close.mp3")
+    pygame.mixer.music.load("media/close.mp3")
     pygame.mixer.music.play()
 
 
 def _play_listen():
     pygame.mixer.init()
-    pygame.mixer.music.load(
-            "/home/pi/edo_ws/src/calib/src/media/listening.mp3")
+    pygame.mixer.music.load("media/listening.mp3")
     pygame.mixer.music.play()
 
 
@@ -70,16 +68,17 @@ def init():
                 _respond("Starting robot")
                 if action_publisher:
                     action_publisher.kill()
-
-                command_sh = "/opt/ros/melodic/bin/rostopic pub -r 1 /robot_operation std_msgs/String start"
-                action_publisher = subprocess.Popen(command_sh.split())
+                action_publisher = subprocess.Popen(
+                    ["bash", "-c", "ros/melodic/bin/rostopic pub -r 20 /robot_operation std_msgs/String start"],
+                    env={'ROS_MASTER_URI': 'http://10.42.0.49:11311\''})
                 break
             elif 'stop' in command:
                 _respond("Stopping the robot")
                 if action_publisher:
                     action_publisher.kill()
-                command_sh = "/opt/ros/melodic/bin/rostopic pub -r 1 /robot_operation std_msgs/String stop"
-                action_publisher = subprocess.Popen(command_sh.split())
+                action_publisher = subprocess.Popen(
+                    ["/bin/bash", "/opt/ros/melodic/bin/rostopic", "pub", "-r", "20", "/robot_operation", "std_msgs/String", "stop"],
+                    env={'ROS_MASTER_URI': 'http://10.42.0.49:11311\''})
                 break
             elif 'velocity' in command and numbers:
                 if int(numbers[0]) < 0 or 10 < int(numbers[0]):
@@ -88,9 +87,9 @@ def init():
                 _respond("Setting speed to " + str(numbers))
                 if velocity_publisher:
                     velocity_publisher.kill()
-
-                command_sh = "/opt/ros/melodic/bin/rostopic pub -r 1 /robot_velocity std_msgs/String " + numbers[0]
-                action_publisher = subprocess.Popen(command_sh.split())
+                velocity_publisher = subprocess.Popen(
+                    ["/bin/bash", "/opt/ros/melodic/bin/rostopic", "pub", "-r", "20", "/robot_velocity", "std_msgs/String", f'"{numbers}"'],
+                    env={'ROS_MASTER_URI': 'http://10.42.0.49:11311\''})
                 break
             elif 'joke' in command:
                 _respond("What did the man say to his dead robot?")
@@ -98,11 +97,6 @@ def init():
                 _respond("Rust in peace.")
                 time.sleep(0.5)
                 _respond("HA HA HA")
-                break
-            elif 'candle' in command or 'home' in command:
-                _respond("Homing robotic arm")
-                command_sh = "/opt/ros/melodic/bin/rostopic pub  --once /robot_operation std_msgs/String home"
-                action_publisher = subprocess.Popen(command_sh.split())
                 break
             else:
                 _respond("Operation not available")

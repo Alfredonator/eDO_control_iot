@@ -19,8 +19,8 @@ port = int(os.getenv('PORT'))
 height = int(os.getenv('HEIGHT'))
 width = int(os.getenv('WIDTH'))
 is_raspberry = bool(os.getenv('RASP'))
-BASE_PATH = '/home/szymon/catkin_ws/src/calib/src/'
 # BASE_PATH = '/home/szymon/catkin_ws/src/calib/src/'
+BASE_PATH = '/home/pi/edo_ws/src/calib/src/'
 
 
 class Calibration_view(qtw.QWidget):
@@ -279,5 +279,6 @@ def start():
 
 if __name__ == '__main__':
     rospy.init_node('edo_calibrate', anonymous=True)
-    subprocess.Popen(["python3", "src/voice_assistant.py"])
+    subprocess.Popen(["python3", 
+        "/home/pi/edo_ws/src/calib/src/voice_assistant.py"])
     start()
