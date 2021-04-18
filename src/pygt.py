@@ -203,7 +203,7 @@ class Display(qtw.QWidget):
 
         btn1 = add_button('START', self.start)
         btn2 = add_button('STOP', self.states.do_emergency_stop)
-        btn3 = add_button('UNBREAK', self.unbreak())
+        btn3 = add_button('UNBREAK', self.unbreak)
         btn4 = add_button('CALIBRATE', self.show_calibration)
 
         self.button_layout.addWidget(btn1, 1, 1)
