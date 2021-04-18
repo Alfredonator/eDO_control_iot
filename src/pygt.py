@@ -212,7 +212,7 @@ class Display(qtw.QWidget):
         self.button_layout.addWidget(btn4, 2, 1)
 
     def unbreak(self):
-        command_sh = 'rostopic pub bridge_jnt_reset --once edo_core_msgs/JointReset "{joints_mask: 63, disengage_steps: 2000, disengage_offset: 3.5}"'
+        command_sh = 'rostopic pub bridge_jnt_reset --once edo_core_msgs/JointReset {joints_mask: 63, disengage_steps: 2000, disengage_offset: 3.5}'
         subprocess.Popen(re.findall(r'(?:[^\s,"]|"(?:\\.|[^"])*")+', command_sh))
 
     ### PARTICULAR WIDGET ADDERS
