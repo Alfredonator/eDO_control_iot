@@ -19,7 +19,6 @@ port = int(os.getenv('PORT'))
 height = int(os.getenv('HEIGHT'))
 width = int(os.getenv('WIDTH'))
 is_raspberry = bool(os.getenv('RASP'))
-# BASE_PATH = '/home/szymon/catkin_ws/src/calib/src/'
 BASE_PATH = '/home/pi/edo_ws/src/calib/src/'
 
 
@@ -203,7 +202,7 @@ class Display(qtw.QWidget):
 
         btn1 = add_button('START', self.start)
         btn2 = add_button('STOP', self.states.do_emergency_stop)
-        btn3 = add_button('UNBREAK', self.states.unbreak)
+        btn3 = add_button('UNBREAK', unbraek())
         btn4 = add_button('CALIBRATE', self.show_calibration)
 
         self.button_layout.addWidget(btn1, 1, 1)
@@ -233,6 +232,11 @@ def add_svg(path):
     svg_widget = QtSvg.QSvgWidget(path)
     svg_widget.setFixedSize(100, 100)
     return svg_widget
+
+
+def unbraek():
+    command_sh = 'rostopic pub bridge_jnt_reset --once edo_core_msgs/JointReset "{joints_mask: 63, disengage_steps: 2000, disengage_offset: 3.5}"'
+    subprocess.Popen(command_sh.split())
 
 
 def add_shadow():
